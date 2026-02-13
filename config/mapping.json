@@ -2,23 +2,23 @@
   "categories": {
     "Food & Dining": {
       "keywords": ["restaurant", "cafe", "coffee", "food", "dining", "bar", "pub", "pizza", "burger", "mcdonald", "starbucks", "subway"],
-      "merchants": []
+      "merchants": ["Starbucks", "McDonalds", "Uber Eats", "DoorDash", "Chipotle", "Dunkin", "Chick-Fil-A", "Wendys", "Panera", "Subway", "Taco Bell", "KFC"]
     },
     "Shopping": {
       "keywords": ["walmart", "target", "amazon", "costco", "store", "shop", "retail", "mall", "purchase"],
-      "merchants": []
+      "merchants": ["Amazon", "Walmart", "Target", "Best Buy", "Home Depot", "Lowes", "Macy", "Nordstrom", "Gap", "IKEA", "Etsy", "eBay", "Costco", "Walgreens", "CVS"]
     },
     "Transportation": {
       "keywords": ["gas", "fuel", "uber", "lyft", "taxi", "transit", "metro", "parking", "toll", "shell", "chevron"],
-      "merchants": []
+      "merchants": ["Uber", "Lyft", "Shell", "Exxon", "Chevron", "Gas", "Parking", "Tolls"]
     },
     "Bills & Utilities": {
       "keywords": ["electric", "gas", "water", "internet", "phone", "cable", "utility", "bill", "mortgage", "rent"],
-      "merchants": []
+      "merchants": ["Verizon", "AT&T", "Comcast", "Netflix", "Spotify", "Hulu", "Disney+", "Electric", "Water", "Insurance", "Geico", "State Farm"]
     },
     "Healthcare": {
       "keywords": ["hospital", "doctor", "pharmacy", "medical", "health", "clinic", "dental", "insurance"],
-      "merchants": []
+      "merchants": ["Pharmacy", "Doctor", "Hospital", "Dentist", "Urgent Care", "Specialist", "Labcorp", "Quest"]
     },
     "Entertainment": {
       "keywords": ["netflix", "spotify", "movie", "theater", "concert", "game", "entertainment"],
@@ -30,7 +30,7 @@
     },
     "Income": {
       "keywords": ["salary", "payroll", "deposit", "income", "refund", "bonus"],
-      "merchants": []
+      "merchants": ["Paycheck", "Salary", "Direct Deposit", "Dividend", "Interest", "Refund", "Tax Refund", "Venmo Cashout", "Rebate", "Cash Back"]
     },
     "Uncategorized": {
       "keywords": [],

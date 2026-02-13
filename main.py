@@ -20,11 +20,11 @@ from classifier import TransactionClassifier
 
 
 class FinancialProcessor:
-    def __init__(self, config_path="config/mapping.json"):
+    def __init__(self, config_path="config/mapping.json", learned_path="config/learned_mapping.json", settings_path="config/settings.json", validation_path="config/validation_rules.json"):
         self.config_path = config_path
-        self.validator = DataValidator(config_path)
+        self.validator = DataValidator(config_path, settings_path, validation_path)
         self.cleaner = DataCleaner(config_path)
-        self.classifier = TransactionClassifier(config_path)
+        self.classifier = TransactionClassifier(config_path, learned_path)
         
     def process_file(self, input_file, output_file=None):
         """
@@ -48,13 +48,10 @@ class FinancialProcessor:
             validated_df = self.validator.validate_data(df)
             validation_summary = self.validator.get_validation_summary()
             
+            # Validation errors are now included in the main Excel file
             if validation_summary['total_errors'] > 0:
                 print(f"Found {validation_summary['total_errors']} validation errors")
                 print("Error breakdown:", validation_summary['error_types'])
-                
-                # Save validation errors
-                error_file = output_file.replace('.xlsx', '_validation_errors.csv')
-                self.validator.save_validation_errors(error_file)
             
             # Step 2: Clean data
             print("Cleaning data...")
@@ -75,10 +72,9 @@ class FinancialProcessor:
             # Step 5: Export results
             self._export_results(classified_df, output_file, validation_summary, classification_summary)
             
-            # Export uncategorized transactions if any
+            # Uncategorized transactions are now included in the main Excel file
             if classification_summary['uncategorized_transactions'] > 0:
-                uncategorized_file = output_file.replace('.xlsx', '_uncategorized.csv')
-                self.classifier.export_uncategorized(classified_df, uncategorized_file)
+                print(f"Exported {classification_summary['uncategorized_transactions']} uncategorized transactions to the Excel report")
             
             print(f"Processing complete. Results saved to: {output_file}")
             return output_file
@@ -102,11 +98,29 @@ class FinancialProcessor:
     
     def _export_results(self, df, output_file, validation_summary, classification_summary):
         """
-        Export results to Excel with multiple sheets
+        Export results to Excel with multiple sheets including all data
         """
         with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
             # Main transactions sheet
             df.to_excel(writer, sheet_name='Transactions', index=False)
+            
+            # Validation errors sheet (if any)
+            if validation_summary['total_errors'] > 0:
+                error_data = []
+                for error in validation_summary['errors']:
+                    error_row = error['data'].copy()
+                    error_row['validation_error'] = '; '.join(error['errors'])
+                    error_row['error_type'] = '; '.join(error['error_types'])
+                    error_row['row_index'] = error['row_index']
+                    error_data.append(error_row)
+                
+                error_df = pd.DataFrame(error_data)
+                error_df.to_excel(writer, sheet_name='Validation Errors', index=False)
+            
+            # Uncategorized transactions sheet (if any)
+            uncategorized_df = df[df['category'] == 'Uncategorized']
+            if not uncategorized_df.empty:
+                uncategorized_df.to_excel(writer, sheet_name='Uncategorized', index=False)
             
             # Validation summary sheet
             validation_data = {
@@ -222,11 +236,14 @@ def main():
     parser.add_argument('--batch', '-b', action='store_true', help='Process all files in input directory')
     parser.add_argument('--learn', '-l', help='Learn from uncategorized transactions file')
     parser.add_argument('--config', '-c', default='config/mapping.json', help='Configuration file path')
+    parser.add_argument('--learned', default='config/learned_mapping.json', help='Learned mappings file path')
+    parser.add_argument('--settings', default='config/settings.json', help='Global settings file path')
+    parser.add_argument('--validation', default='config/validation_rules.json', help='Validation rules file path')
     
     args = parser.parse_args()
     
     # Initialize processor
-    processor = FinancialProcessor(args.config)
+    processor = FinancialProcessor(args.config, args.learned, args.settings, args.validation)
     
     try:
         if args.learn:

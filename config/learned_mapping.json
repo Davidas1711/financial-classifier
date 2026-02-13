@@ -1,0 +1,17 @@
+{
+  "taco palace": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T17:01:08.002037",
+    "method": "ai_classification"
+  },
+  "streaming plus": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T17:01:08.006055",
+    "method": "ai_classification"
+  },
+  "video streaming": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T17:01:08.008061",
+    "method": "ai_classification"
+  }
+}

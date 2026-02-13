@@ -5,16 +5,22 @@ import os
 
 
 class DataValidator:
-    def __init__(self, config_path="../config/mapping.json"):
-        self.config = self._load_config(config_path)
+    def __init__(self, mapping_path="../config/mapping.json", settings_path="../config/settings.json", validation_path="../config/validation_rules.json"):
+        self.mapping_config = self._load_config(mapping_path)
+        self.settings_config = self._load_config(settings_path)
+        self.validation_config = self._load_config(validation_path)
         self.validation_errors = []
         
     def _load_config(self, config_path):
         try:
+            if not os.path.exists(config_path):
+                print(f"Warning: Config file not found: {config_path}")
+                return {}
             with open(config_path, 'r') as f:
                 return json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Configuration file not found: {config_path}")
+        except Exception as e:
+            print(f"Error loading config {config_path}: {e}")
+            return {}
     
     def validate_data(self, df, date_col=None, desc_col=None, amount_col=None):
         """
@@ -47,18 +53,37 @@ class DataValidator:
                 errors.append(f"Missing {amount_col}")
                 error_types.append("missing_amount")
             
-            # Check amount validity
+            # Check amount validity using 3-tier validation
             try:
                 amount = float(row.get(amount_col, 0))
-                if amount == 0:
-                    errors.append("Amount is $0")
-                    error_types.append("zero_amount")
-                elif amount > self.config['settings']['max_amount_threshold']:
-                    errors.append(f"Amount exceeds ${self.config['settings']['max_amount_threshold']:,}")
-                    error_types.append("excessive_amount")
-                elif amount < self.config['settings']['min_amount_threshold']:
-                    errors.append(f"Amount below ${self.config['settings']['min_amount_threshold']}")
-                    error_types.append("negative_amount")
+                description = str(row.get(desc_col, '')).lower().strip()
+                
+                # Tier 1: Merchant-specific validation
+                merchant_violation = self._validate_merchant_range(description, amount)
+                if merchant_violation:
+                    errors.append(merchant_violation)
+                    error_types.append("merchant_range_violation")
+                
+                # Tier 2: Category threshold validation
+                category_violation = self._validate_category_threshold(description, amount)
+                if category_violation:
+                    errors.append(category_violation)
+                    error_types.append("category_threshold_violation")
+                
+                # Tier 3: Global limits validation
+                global_violation = self._validate_global_limits(amount)
+                if global_violation:
+                    errors.append(global_violation)
+                    error_types.append("global_limit_violation")
+                
+                # Tier 4: AI sanity check for outliers
+                ai_config = self.settings_config.get('ai_sanction_check', {})
+                if ai_config.get('enabled', False):
+                    ai_violation = self._ai_sanity_check(description, amount, row.get('category', ''))
+                    if ai_violation:
+                        errors.append(ai_violation)
+                        error_types.append("ai_outlier_flag")
+                        
             except (ValueError, TypeError):
                 errors.append("Invalid amount format")
                 error_types.append("invalid_amount")
@@ -67,13 +92,14 @@ class DataValidator:
             try:
                 date_val = pd.to_datetime(row.get(date_col))
                 today = datetime.now()
-                min_date = today - timedelta(days=self.config['settings']['date_range_years'] * 365)
+                date_range = self.settings_config.get('global_limits', {}).get('date_range_years', 5)
+                min_date = today - timedelta(days=date_range * 365)
                 
                 if date_val > today:
                     errors.append("Future date")
                     error_types.append("future_date")
                 elif date_val < min_date:
-                    errors.append(f"Date older than {self.config['settings']['date_range_years']} years")
+                    errors.append(f"Date older than {date_range} years")
                     error_types.append("ancient_date")
             except (ValueError, TypeError):
                 errors.append("Invalid date format")
@@ -160,3 +186,91 @@ class DataValidator:
             print(f"Validation errors saved to: {output_path}")
         else:
             print("No validation errors to save.")
+    
+    def _validate_merchant_range(self, description, amount):
+        """
+        Tier 1: Validate against merchant-specific price ranges
+        """
+        merchant_ranges = self.validation_config.get('merchant_ranges', {})
+        
+        for merchant, rules in merchant_ranges.items():
+            if merchant.lower() in description or description in merchant.lower():
+                min_amount = rules.get('min_amount', 0)
+                max_amount = rules.get('max_amount', float('inf'))
+                
+                if amount < min_amount:
+                    return f"Amount ${amount:.2f} below minimum for {merchant} (${min_amount:.2f})"
+                elif amount > max_amount:
+                    return f"Amount ${amount:.2f} above maximum for {merchant} (${max_amount:.2f})"
+        
+        return None
+    
+    def _validate_category_threshold(self, description, amount):
+        """
+        Tier 2: Validate against category thresholds
+        """
+        category_thresholds = self.settings_config.get('category_thresholds', {})
+        
+        # Try to determine category from merchant mapping
+        category = self._get_category_for_merchant(description)
+        
+        if category and category in category_thresholds:
+            threshold = category_thresholds[category]
+            min_amount = threshold.get('min_amount', 0)
+            max_amount = threshold.get('max_amount', float('inf'))
+            
+            if amount < min_amount:
+                return f"Amount ${amount:.2f} below {category} minimum (${min_amount:.2f})"
+            elif amount > max_amount:
+                return f"Amount ${amount:.2f} above {category} maximum (${max_amount:.2f})"
+        
+        return None
+    
+    def _validate_global_limits(self, amount):
+        """
+        Tier 3: Validate against global limits
+        """
+        global_limits = self.settings_config.get('global_limits', {})
+        
+        min_threshold = global_limits.get('min_amount_threshold', 0)
+        max_threshold = global_limits.get('max_amount_threshold', 10000)
+        zero_flag = global_limits.get('zero_amount_flag', True)
+        
+        if zero_flag and amount == 0:
+            return "Amount is $0"
+        elif amount < min_threshold:
+            return f"Amount ${amount:.2f} below global minimum (${min_threshold:.2f})"
+        elif amount > max_threshold:
+            return f"Amount ${amount:.2f} exceeds global maximum (${max_threshold:.2f})"
+        
+        return None
+    
+    def _ai_sanity_check(self, description, amount, category):
+        """
+        Tier 4: AI sanity check for outliers
+        """
+        # Simple heuristic-based outlier detection
+        # This could be enhanced with actual AI/ML models
+        
+        # Check for unusually high amounts for common merchants
+        high_value_merchants = ['starbucks', 'mcdonalds', 'subway', 'taco bell']
+        if any(merchant in description for merchant in high_value_merchants) and amount > 100:
+            return f"Unusually high amount ${amount:.2f} for {description}"
+        
+        # Check for round numbers that might indicate errors
+        if amount > 1000 and amount == round(amount):
+            return f"Large round number ${amount:.2f} may indicate error"
+        
+        return None
+    
+    def _get_category_for_merchant(self, description):
+        """
+        Helper method to determine category for a merchant
+        """
+        merchant_ranges = self.validation_config.get('merchant_ranges', {})
+        
+        for merchant, rules in merchant_ranges.items():
+            if merchant.lower() in description or description in merchant.lower():
+                return rules.get('category')
+        
+        return None

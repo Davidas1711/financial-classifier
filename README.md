@@ -113,14 +113,51 @@ Edit `config/mapping.json` to customize:
 
 ## Data Validation
 
-The system automatically validates transactions and flags:
+The system uses a **3-tier validation system** to ensure data quality:
 
+### Tier 1: Merchant-Specific Validation
+Validates against known merchant price ranges (e.g., Netflix: $5-$30)
+
+### Tier 2: Category Threshold Validation  
+Validates against category-level spending limits
+
+### Tier 3: Global Limits Validation
+Validates against global maximum/minimum amounts
+
+### Tier 4: AI Sanity Check
+Flags outliers and suspicious patterns using AI heuristics
+
+The system automatically flags:
 - **Missing Values**: Empty Date, Description, or Amount fields
+- **Range Violations**: Amounts outside merchant/category limits
 - **Impossible Amounts**: $0 transactions or amounts exceeding thresholds
-- **Invalid Dates**: Future dates or dates older than 5 years
+- **Invalid Dates**: Future dates or dates older than configured range
 - **Format Issues**: Invalid amount or date formats
+- **AI Outliers**: Suspicious patterns detected by AI
 
 Validation errors are saved to a separate CSV file and included in the Excel report.
+
+## Managing Spending Policies
+
+The configuration-driven system allows you to customize validation rules without coding:
+
+**To adjust flagging limits or subscription price ranges, simply edit the files in the /config folder. Just change these numbers to whatever your business spending policy is, and the system will update automatically—no coding required.**
+
+### Configuration Files:
+
+- **`config/settings.json`**: Global limits and category thresholds
+- **`config/validation_rules.json`**: Merchant-specific price ranges
+- **`config/mapping.json`**: Classification rules and merchant mappings
+
+### Example Customizations:
+
+```json
+// config/validation_rules.json - Set Netflix price range
+{"merchant_ranges": {"Netflix": {"min_amount": 5, "max_amount": 30, "category": "Entertainment"}}}
+
+// config/settings.json - Adjust category limits  
+{"category_thresholds": {"Food & Dining": {"min_amount": 1, "max_amount": 500}}}
+```
 
 ## Privacy Features
 
