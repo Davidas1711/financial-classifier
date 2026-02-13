@@ -248,6 +248,7 @@ class DataValidator:
     def _ai_sanity_check(self, description, amount, category):
         """
         Tier 4: AI sanity check for outliers using LLM
+        Handles both monthly and yearly subscriptions
         """
         ai_config = self.validation_config.get('ai_sanity_check', {})
         
@@ -259,25 +260,37 @@ class DataValidator:
         if merchant_rule:
             min_amount = merchant_rule.get('min_amount', 0)
             max_amount = merchant_rule.get('max_amount', float('inf'))
+            billing_cycles = merchant_rule.get('billing_cycles', ['monthly'])
             
-            # If amount is significantly outside the range, use AI
+            # Handle yearly subscriptions
             outlier_multiplier = ai_config.get('outlier_multiplier', 3.0)
+            yearly_multiplier = ai_config.get('yearly_multiplier', 12.0)
             
+            # Check if this might be a yearly subscription
+            if 'yearly' in billing_cycles:
+                yearly_max = max_amount * yearly_multiplier
+                if amount <= yearly_max:
+                    # This is likely a valid yearly subscription
+                    return None
+                elif amount > yearly_max * outlier_multiplier:
+                    return self._llm_anomaly_check(description, amount, merchant_rule, yearly_max, "yearly")
+            
+            # Check monthly anomalies
             if amount > max_amount * outlier_multiplier:
-                return self._llm_anomaly_check(description, amount, merchant_rule, max_amount)
+                return self._llm_anomaly_check(description, amount, merchant_rule, max_amount, "monthly")
             elif amount < min_amount / outlier_multiplier and min_amount > 0:
-                return self._llm_anomaly_check(description, amount, merchant_rule, min_amount)
+                return self._llm_anomaly_check(description, amount, merchant_rule, min_amount, "monthly")
         
         # Check category-level anomalies
         category_rule = self.validation_config.get('category_thresholds', {}).get(category, {})
         if category_rule:
             cat_max = category_rule.get('max_amount', float('inf'))
             if amount > cat_max * outlier_multiplier:
-                return self._llm_anomaly_check(description, amount, category_rule, cat_max)
+                return self._llm_anomaly_check(description, amount, category_rule, cat_max, "category")
         
         return None
     
-    def _llm_anomaly_check(self, description, amount, rule, expected_max):
+    def _llm_anomaly_check(self, description, amount, rule, expected_max, billing_type="monthly"):
         """
         Use LLM to perform sanity check on anomalous amounts
         """
@@ -289,12 +302,18 @@ class DataValidator:
             typical_range = rule.get('typical_range', 'unknown')
             
             # Simulate LLM response for demonstration
-            if amount > expected_max * 5:
-                return f"AI: Anomalous Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
-            elif amount > expected_max * 3:
-                return f"AI: Suspicious Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
+            if billing_type == "yearly":
+                if amount > expected_max * 5:
+                    return f"AI: Anomalous Yearly Amount - ${amount:.2f} for {merchant_name} (typical yearly: {typical_range})"
+                elif amount > expected_max * 3:
+                    return f"AI: Suspicious Yearly Amount - ${amount:.2f} for {merchant_name} (typical yearly: {typical_range})"
             else:
-                return None
+                if amount > expected_max * 5:
+                    return f"AI: Anomalous Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
+                elif amount > expected_max * 3:
+                    return f"AI: Suspicious Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
+            
+            return None
                 
         except Exception as e:
             print(f"LLM sanity check failed: {e}")
