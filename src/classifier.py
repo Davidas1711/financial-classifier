@@ -4,6 +4,7 @@ from thefuzz import fuzz
 import os
 import requests
 from datetime import datetime
+import re
 
 
 class TransactionClassifier:
@@ -85,6 +86,9 @@ class TransactionClassifier:
             
             if description == 'nan' or not description:
                 continue
+            
+            # Clean description: remove sequences of 4+ digits
+            description = self._clean_description(description)
             
             # Try exact merchant match first (mapping.json)
             category, method, confidence = self._classify_by_merchant(description)
@@ -345,3 +349,15 @@ Respond with only the category name. If you cannot determine the category, respo
             print("No uncategorized transactions to export")
         
         return len(uncategorized)
+    
+    def _clean_description(self, description):
+        """
+        Clean description by removing sequences of 4+ digits and extra whitespace
+        """
+        # Remove sequences of 4 or more digits
+        description = re.sub(r'\d{4,}', '', description)
+        
+        # Remove extra whitespace
+        description = re.sub(r'\s+', ' ', description).strip()
+        
+        return description

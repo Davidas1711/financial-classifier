@@ -21,16 +21,16 @@
       "merchants": ["Pharmacy", "Doctor", "Hospital", "Dentist", "Urgent Care", "Specialist", "Labcorp", "Quest"]
     },
     "Entertainment": {
-      "keywords": ["netflix", "spotify", "movie", "theater", "concert", "game", "entertainment"],
-      "merchants": []
+      "keywords": ["netflix", "spotify", "movie", "theater", "concert", "game", "entertainment", "gaming", "sports", "gym", "bowling", "amusement", "arcade"],
+      "merchants": ["Gaming Platform", "Sports Event", "Gym Membership", "Bowling Alley", "Amusement Park", "Arcade"]
     },
     "Banking & Fees": {
-      "keywords": ["bank", "fee", "charge", "interest", "atm", "overdraft", "service"],
-      "merchants": []
+      "keywords": ["bank", "fee", "charge", "interest", "atm", "overdraft", "service", "transfer", "wire", "property", "tax"],
+      "merchants": ["Wire Transfer", "Property Tax"]
     },
     "Income": {
-      "keywords": ["salary", "payroll", "deposit", "income", "refund", "bonus"],
-      "merchants": ["Paycheck", "Salary", "Direct Deposit", "Dividend", "Interest", "Refund", "Tax Refund", "Venmo Cashout", "Rebate", "Cash Back"]
+      "keywords": ["salary", "payroll", "deposit", "income", "refund", "bonus", "investment", "freelance", "payment"],
+      "merchants": ["Paycheck", "Salary", "Direct Deposit", "Dividend", "Interest", "Refund", "Tax Refund", "Venmo Cashout", "Rebate", "Cash Back", "Investment Return", "Freelance Payment"]
     },
     "Uncategorized": {
       "keywords": [],
