@@ -1,0 +1,47 @@
+{
+  "categories": {
+    "Food & Dining": {
+      "keywords": ["restaurant", "cafe", "coffee", "food", "dining", "bar", "pub", "pizza", "burger", "mcdonald", "starbucks", "subway"],
+      "merchants": []
+    },
+    "Shopping": {
+      "keywords": ["walmart", "target", "amazon", "costco", "store", "shop", "retail", "mall", "purchase"],
+      "merchants": []
+    },
+    "Transportation": {
+      "keywords": ["gas", "fuel", "uber", "lyft", "taxi", "transit", "metro", "parking", "toll", "shell", "chevron"],
+      "merchants": []
+    },
+    "Bills & Utilities": {
+      "keywords": ["electric", "gas", "water", "internet", "phone", "cable", "utility", "bill", "mortgage", "rent"],
+      "merchants": []
+    },
+    "Healthcare": {
+      "keywords": ["hospital", "doctor", "pharmacy", "medical", "health", "clinic", "dental", "insurance"],
+      "merchants": []
+    },
+    "Entertainment": {
+      "keywords": ["netflix", "spotify", "movie", "theater", "concert", "game", "entertainment"],
+      "merchants": []
+    },
+    "Banking & Fees": {
+      "keywords": ["bank", "fee", "charge", "interest", "atm", "overdraft", "service"],
+      "merchants": []
+    },
+    "Income": {
+      "keywords": ["salary", "payroll", "deposit", "income", "refund", "bonus"],
+      "merchants": []
+    },
+    "Uncategorized": {
+      "keywords": [],
+      "merchants": []
+    }
+  },
+  "settings": {
+    "fuzzy_match_threshold": 80,
+    "max_amount_threshold": 10000,
+    "min_amount_threshold": 0,
+    "date_range_years": 5,
+    "private_mode": false
+  }
+}
