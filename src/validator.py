@@ -247,19 +247,83 @@ class DataValidator:
     
     def _ai_sanity_check(self, description, amount, category):
         """
-        Tier 4: AI sanity check for outliers
+        Tier 4: AI sanity check for outliers using LLM
         """
-        # Simple heuristic-based outlier detection
-        # This could be enhanced with actual AI/ML models
+        ai_config = self.validation_config.get('ai_sanity_check', {})
         
+        if not ai_config.get('enabled', False):
+            return self._fallback_sanity_check(description, amount, category)
+        
+        # Check if amount is outside normal merchant range
+        merchant_rule = self._get_merchant_rule(description)
+        if merchant_rule:
+            min_amount = merchant_rule.get('min_amount', 0)
+            max_amount = merchant_rule.get('max_amount', float('inf'))
+            
+            # If amount is significantly outside the range, use AI
+            outlier_multiplier = ai_config.get('outlier_multiplier', 3.0)
+            
+            if amount > max_amount * outlier_multiplier:
+                return self._llm_anomaly_check(description, amount, merchant_rule, max_amount)
+            elif amount < min_amount / outlier_multiplier and min_amount > 0:
+                return self._llm_anomaly_check(description, amount, merchant_rule, min_amount)
+        
+        # Check category-level anomalies
+        category_rule = self.validation_config.get('category_thresholds', {}).get(category, {})
+        if category_rule:
+            cat_max = category_rule.get('max_amount', float('inf'))
+            if amount > cat_max * outlier_multiplier:
+                return self._llm_anomaly_check(description, amount, category_rule, cat_max)
+        
+        return None
+    
+    def _llm_anomaly_check(self, description, amount, rule, expected_max):
+        """
+        Use LLM to perform sanity check on anomalous amounts
+        """
+        try:
+            # This is a placeholder for actual LLM integration
+            # Replace with your preferred LLM API (OpenAI, Claude, etc.)
+            
+            merchant_name = rule.get('description', description)
+            typical_range = rule.get('typical_range', 'unknown')
+            
+            # Simulate LLM response for demonstration
+            if amount > expected_max * 5:
+                return f"AI: Anomalous Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
+            elif amount > expected_max * 3:
+                return f"AI: Suspicious Amount for Merchant - ${amount:.2f} for {merchant_name} (typical: {typical_range})"
+            else:
+                return None
+                
+        except Exception as e:
+            print(f"LLM sanity check failed: {e}")
+            return f"AI Sanity Check Failed - Amount ${amount:.2f} for {description}"
+    
+    def _fallback_sanity_check(self, description, amount, category):
+        """
+        Fallback heuristic-based sanity check when AI is disabled
+        """
         # Check for unusually high amounts for common merchants
-        high_value_merchants = ['starbucks', 'mcdonalds', 'subway', 'taco bell']
+        high_value_merchants = ['starbucks', 'mcdonalds', 'subway', 'taco bell', 'spotify', 'netflix']
         if any(merchant in description for merchant in high_value_merchants) and amount > 100:
             return f"Unusually high amount ${amount:.2f} for {description}"
         
         # Check for round numbers that might indicate errors
         if amount > 1000 and amount == round(amount):
             return f"Large round number ${amount:.2f} may indicate error"
+        
+        return None
+    
+    def _get_merchant_rule(self, description):
+        """
+        Get merchant-specific rule for validation
+        """
+        merchant_ranges = self.validation_config.get('merchant_ranges', {})
+        
+        for merchant, rule in merchant_ranges.items():
+            if merchant.lower() in description or description in merchant.lower():
+                return rule
         
         return None
     
