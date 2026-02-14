@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Financial Transaction Classification System
-Main entry point for the transaction processing pipeline
+Financial Transaction Classification System - CLI Tool
+Professional command-line interface for transaction processing pipeline
 """
 
 import os
@@ -10,6 +10,7 @@ import pandas as pd
 import json
 from datetime import datetime
 import argparse
+import logging
 
 # Add src directory to path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
@@ -20,17 +21,30 @@ from classifier import TransactionClassifier
 
 
 class FinancialProcessor:
-    def __init__(self, config_path="config/mapping.json", learned_path="config/learned_mapping.json", settings_path="config/settings.json", validation_path="config/validation_rules.json"):
+    """Professional CLI processor for financial transaction classification"""
+    def __init__(self, config_path="config/mapping.json", learned_path="config/learned_mapping.json", 
+                 settings_path="config/settings.json", validation_path="config/validation_rules.json"):
+        """Initialize the financial processor with configuration paths"""
         self.config_path = config_path
         self.validator = DataValidator(config_path, settings_path, validation_path)
         self.cleaner = DataCleaner(config_path)
         self.classifier = TransactionClassifier(config_path, learned_path)
+        self._setup_logging()
         
+    def _setup_logging(self):
+        """Setup logging configuration for the processor"""
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        self.logger = logging.getLogger(__name__)
+    
     def process_file(self, input_file, output_file=None):
         """
         Process a single financial data file through the complete pipeline
         """
-        print(f"Processing file: {input_file}")
+        self.logger.info(f"Starting processing: {input_file}")
         
         # Determine output filename if not provided
         if not output_file:
@@ -38,49 +52,54 @@ class FinancialProcessor:
             base_name = os.path.splitext(os.path.basename(input_file))[0]
             output_file = f"data/output/{base_name}_processed_{timestamp}.xlsx"
         
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(output_file), exist_ok=True)
+        
         try:
             # Load data
+            self.logger.info("Loading data...")
             df = self._load_data(input_file)
-            print(f"Loaded {len(df)} transactions")
+            self.logger.info(f"Loaded {len(df)} transactions")
             
             # Step 1: Validate data
-            print("Validating data...")
+            self.logger.info("Validating data...")
             validated_df = self.validator.validate_data(df)
             validation_summary = self.validator.get_validation_summary()
             
             # Validation errors are now included in the main Excel file
             if validation_summary['total_errors'] > 0:
-                print(f"Found {validation_summary['total_errors']} validation errors")
-                print("Error breakdown:", validation_summary['error_types'])
+                self.logger.warning(f"Found {validation_summary['total_errors']} validation errors")
+                self.logger.warning(f"Error breakdown: {validation_summary['error_types']}")
             
             # Step 2: Clean data
-            print("Cleaning data...")
+            self.logger.info("Cleaning data...")
             cleaned_df = self.cleaner.clean_data(validated_df)
             
             # Step 3: Classify transactions
-            print("Classifying transactions...")
+            self.logger.info("Classifying transactions...")
             classified_df = self.classifier.classify_transactions(cleaned_df)
             
             # Step 4: Generate summary
             classification_summary = self.classifier.get_classification_summary(classified_df)
-            print(f"Classification complete:")
-            print(f"  - Total: {classification_summary['total_transactions']}")
-            print(f"  - Categorized: {classification_summary['categorized_transactions']}")
-            print(f"  - Uncategorized: {classification_summary['uncategorized_transactions']}")
-            print(f"  - Average confidence: {classification_summary['average_confidence']:.1f}%")
+            self.logger.info("Classification complete:")
+            self.logger.info(f"  - Total: {classification_summary['total_transactions']}")
+            self.logger.info(f"  - Categorized: {classification_summary['categorized_transactions']}")
+            self.logger.info(f"  - Uncategorized: {classification_summary['uncategorized_transactions']}")
+            self.logger.info(f"  - Average confidence: {classification_summary['average_confidence']:.1f}%")
             
             # Step 5: Export results
+            self.logger.info("Generating output report...")
             self._export_results(classified_df, output_file, validation_summary, classification_summary)
             
             # Uncategorized transactions are now included in the main Excel file
             if classification_summary['uncategorized_transactions'] > 0:
-                print(f"Exported {classification_summary['uncategorized_transactions']} uncategorized transactions to the Excel report")
+                self.logger.info(f"Exported {classification_summary['uncategorized_transactions']} uncategorized transactions to the Excel report")
             
-            print(f"Processing complete. Results saved to: {output_file}")
+            self.logger.info(f"Processing complete. Results saved to: {output_file}")
             return output_file
             
         except Exception as e:
-            print(f"Error processing file: {str(e)}")
+            self.logger.error(f"Error processing file: {str(e)}")
             raise
     
     def _load_data(self, input_file):
@@ -93,6 +112,8 @@ class FinancialProcessor:
             df = pd.read_csv(input_file)
         elif file_ext in ['.xlsx', '.xls']:
             df = pd.read_excel(input_file)
+        elif file_ext == '.pdf':
+            df = self._load_pdf_data(input_file)
         else:
             raise ValueError(f"Unsupported file format: {file_ext}")
         
@@ -100,6 +121,34 @@ class FinancialProcessor:
         df = self._adapt_data_format(df)
         
         return df
+    
+    def _load_pdf_data(self, pdf_path):
+        """
+        Load data from PDF bank statement
+        """
+        try:
+            # Import PDF reader
+            import sys
+            sys.path.append('src')
+            from pdf_reader import read_pdf_bank_statement, clean_pdf_data
+            
+            print("Reading PDF bank statement...")
+            
+            # Extract table from PDF
+            df = read_pdf_bank_statement(pdf_path)
+            
+            if df is None:
+                raise ValueError("Could not extract data from PDF")
+            
+            # Clean the extracted data
+            df = clean_pdf_data(df)
+            
+            print(f"Successfully loaded {len(df)} transactions from PDF")
+            return df
+            
+        except Exception as e:
+            print(f"Error loading PDF: {e}")
+            raise
     
     def _adapt_data_format(self, df):
         """
@@ -294,50 +343,57 @@ class FinancialProcessor:
             )
             method_df.to_excel(writer, sheet_name='Method Breakdown', index=False)
     
-    def batch_process(self, input_dir="data/input"):
+    def batch_process(self, input_dir="data/input", output_dir="data/output"):
         """
         Process all files in the input directory
         """
         if not os.path.exists(input_dir):
-            print(f"Input directory not found: {input_dir}")
+            self.logger.error(f"Input directory not found: {input_dir}")
             return
+        
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
         
         files = [f for f in os.listdir(input_dir) 
-                if f.endswith(('.csv', '.xlsx', '.xls'))]
+                if f.endswith(('.csv', '.xlsx', '.xls', '.pdf'))]
         
         if not files:
-            print(f"No data files found in: {input_dir}")
+            self.logger.warning(f"No data files found in: {input_dir}")
             return
         
-        print(f"Found {len(files)} files to process")
+        self.logger.info(f"Found {len(files)} files to process")
         
+        processed_count = 0
         for file in files:
             input_path = os.path.join(input_dir, file)
             try:
                 self.process_file(input_path)
+                processed_count += 1
             except Exception as e:
-                print(f"Failed to process {file}: {str(e)}")
+                self.logger.error(f"Failed to process {file}: {str(e)}")
                 continue
+        
+        self.logger.info(f"Successfully processed {processed_count}/{len(files)} files")
     
     def interactive_learning(self, uncategorized_file):
         """
         Interactive mode to learn from manual categorization
         """
         if not os.path.exists(uncategorized_file):
-            print(f"File not found: {uncategorized_file}")
+            self.logger.error(f"File not found: {uncategorized_file}")
             return
         
         df = pd.read_csv(uncategorized_file)
         
-        print(f"Found {len(df)} uncategorized transactions")
-        print("Available categories:")
+        self.logger.info(f"Found {len(df)} uncategorized transactions")
+        self.logger.info("Available categories:")
         for i, category in enumerate(self.classifier.categories.keys()):
             if category != 'Uncategorized':
-                print(f"  {i+1}. {category}")
+                self.logger.info(f"  {i+1}. {category}")
         
         for idx, row in df.iterrows():
             description = row.get('description', row.get('merchant', 'Unknown'))
-            print(f"\nTransaction: {description}")
+            self.logger.info(f"\nTransaction: {description}")
             
             try:
                 choice = input("Enter category number (or 'skip' to skip): ").strip()
@@ -352,45 +408,101 @@ class FinancialProcessor:
                     category = categories[category_num - 1]
                     if category != 'Uncategorized':
                         self.classifier.add_merchant_mapping(description, category)
-                        print(f"Added '{description}' to '{category}'")
+                        self.logger.info(f"Added '{description}' to '{category}'")
                 else:
-                    print("Invalid category number")
+                    self.logger.warning("Invalid category number")
                     
             except ValueError:
-                print("Invalid input")
+                self.logger.warning("Invalid input")
             except KeyboardInterrupt:
-                print("\nLearning interrupted")
+                self.logger.info("\nLearning interrupted")
                 break
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Financial Transaction Classification System')
-    parser.add_argument('--file', '-f', help='Input file to process')
-    parser.add_argument('--output', '-o', help='Output file path')
-    parser.add_argument('--batch', '-b', action='store_true', help='Process all files in input directory')
-    parser.add_argument('--learn', '-l', help='Learn from uncategorized transactions file')
-    parser.add_argument('--config', '-c', default='config/mapping.json', help='Configuration file path')
-    parser.add_argument('--learned', default='config/learned_mapping.json', help='Learned mappings file path')
-    parser.add_argument('--settings', default='config/settings.json', help='Global settings file path')
-    parser.add_argument('--validation', default='config/validation_rules.json', help='Validation rules file path')
+    """Main entry point for the CLI application"""
+    parser = argparse.ArgumentParser(
+        description='Financial Transaction Classification System - Professional CLI Tool',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  %(prog)s --file transactions.csv
+  %(prog)s --file data.pdf --output report.xlsx
+  %(prog)s --batch --input-dir data/input --output-dir data/output
+  %(prog)s --learn uncategorized.csv
+        """
+    )
+    
+    # File processing options
+    parser.add_argument('--file', '-f', 
+                       help='Input file to process (CSV, Excel, or PDF)')
+    parser.add_argument('--output', '-o', 
+                       help='Output file path (default: auto-generated)')
+    
+    # Batch processing options
+    parser.add_argument('--batch', '-b', action='store_true',
+                       help='Process all files in input directory')
+    parser.add_argument('--input-dir', default='data/input',
+                       help='Input directory for batch processing (default: data/input)')
+    parser.add_argument('--output-dir', default='data/output',
+                       help='Output directory for batch processing (default: data/output)')
+    
+    # Learning mode
+    parser.add_argument('--learn', '-l', 
+                       help='Learn from uncategorized transactions file')
+    
+    # Configuration options
+    parser.add_argument('--config', '-c', default='config/mapping.json',
+                       help='Configuration file path (default: config/mapping.json)')
+    parser.add_argument('--learned', default='config/learned_mapping.json',
+                       help='Learned mappings file path (default: config/learned_mapping.json)')
+    parser.add_argument('--settings', default='config/settings.json',
+                       help='Global settings file path (default: config/settings.json)')
+    parser.add_argument('--validation', default='config/validation_rules.json',
+                       help='Validation rules file path (default: config/validation_rules.json)')
+    
+    # Logging options
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Enable verbose logging')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                       help='Suppress informational messages')
     
     args = parser.parse_args()
     
-    # Initialize processor
-    processor = FinancialProcessor(args.config, args.learned, args.settings, args.validation)
+    # Setup logging level based on arguments
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    elif args.quiet:
+        logging.getLogger().setLevel(logging.ERROR)
     
+    # Validate arguments
+    if not any([args.file, args.batch, args.learn]):
+        print("Error: Please specify one of --file, --batch, or --learn")
+        parser.print_help()
+        sys.exit(1)
+    
+    # Initialize processor
+    try:
+        processor = FinancialProcessor(args.config, args.learned, args.settings, args.validation)
+    except Exception as e:
+        print(f"Error initializing processor: {str(e)}")
+        sys.exit(1)
+    
+    # Execute requested operation
     try:
         if args.learn:
             processor.interactive_learning(args.learn)
         elif args.file:
+            if not os.path.exists(args.file):
+                print(f"Error: Input file not found: {args.file}")
+                sys.exit(1)
             processor.process_file(args.file, args.output)
         elif args.batch:
-            processor.batch_process()
-        else:
-            print("Please specify --file, --batch, or --learn")
-            parser.print_help()
+            processor.batch_process(args.input_dir, args.output_dir)
+            
     except KeyboardInterrupt:
         print("\nOperation interrupted by user")
+        sys.exit(1)
     except Exception as e:
         print(f"Error: {str(e)}")
         sys.exit(1)
