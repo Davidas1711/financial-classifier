@@ -1,7 +1,11 @@
 import pandas as pd
 import re
 import json
-from thefuzz import fuzz
+import difflib
+
+# Pre-compiled regex patterns for performance
+WHITESPACE_PATTERN = re.compile(r'\s+')
+CURRENCY_PATTERN = re.compile(r'[$,€£¥]')
 
 
 class DataCleaner:
@@ -82,15 +86,39 @@ class DataCleaner:
     
     def _clean_dates(self, df, date_col):
         """
-        Standardize date formats
+        Standardize date formats with flexible parsing for international formats
         """
         if date_col not in df.columns:
             return df
         
-        # Convert to datetime
-        df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+        # Try multiple date formats commonly used internationally
+        date_formats = [
+            '%Y-%m-%d',    # 2024-01-15 (ISO)
+            '%m/%d/%Y',    # 01/15/2024 (US)
+            '%d/%m/%Y',    # 15/01/2024 (European)
+            '%Y.%m.%d',    # 2024.01.15 (German)
+            '%d %b %Y',    # 15 Jan 2024 (UK)
+            '%b %d, %Y',   # Jan 15, 2024 (US)
+            '%Y/%m/%d',    # 2024/01/15 (Asian)
+            '%d-%m-%Y',    # 15-01-2024 (European)
+            '%m-%d-%Y',    # 01-15-2024 (US alternative)
+        ]
         
-        # Format as YYYY-MM-DD
+        # Try each format until one works
+        for fmt in date_formats:
+            try:
+                df[date_col] = pd.to_datetime(df[date_col], format=fmt, errors='coerce')
+                # Check if we successfully parsed most dates
+                if df[date_col].notna().sum() > len(df) * 0.8:  # 80% success rate
+                    break
+            except:
+                continue
+        
+        # If no format worked well, let pandas try automatically
+        if df[date_col].isna().sum() > len(df) * 0.2:  # More than 20% failed
+            df[date_col] = pd.to_datetime(df[date_col], errors='coerce')
+        
+        # Format as YYYY-MM-DD for consistency
         df[date_col] = df[date_col].dt.strftime('%Y-%m-%d')
         
         return df
@@ -124,8 +152,8 @@ class DataCleaner:
         # Standardize case (title case for readability)
         df[desc_col] = df[desc_col].str.title()
         
-        # Remove multiple spaces
-        df[desc_col] = df[desc_col].str.replace(r'\s+', ' ', regex=True)
+        # Remove multiple spaces (using pre-compiled pattern)
+        df[desc_col] = df[desc_col].str.replace(WHITESPACE_PATTERN, ' ', regex=True)
         
         return df
     
@@ -139,8 +167,8 @@ class DataCleaner:
         # Convert to string first to handle various formats
         df[amount_col] = df[amount_col].astype(str)
         
-        # Remove currency symbols and commas
-        df[amount_col] = df[amount_col].str.replace(r'[$,]', '', regex=True)
+        # Remove currency symbols and commas (using pre-compiled pattern)
+        df[amount_col] = df[amount_col].str.replace(CURRENCY_PATTERN, '', regex=True)
         
         # Handle parentheses for negative numbers (e.g., (100.00) = -100.00)
         df[amount_col] = df[amount_col].str.replace(r'^\((.*?)\)$', r'-\1', regex=True)
@@ -210,7 +238,7 @@ class DataCleaner:
                 continue
                 
             for j, merchant2 in enumerate(unique_merchants[i+1:], i+1):
-                similarity = fuzz.ratio(merchant1.lower(), merchant2.lower())
+                similarity = difflib.SequenceMatcher(None, merchant1.lower(), merchant2.lower()).ratio()
                 
                 if similarity >= self.config['settings']['fuzzy_match_threshold']:
                     # Use the shorter, cleaner name as the standard

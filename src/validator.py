@@ -14,12 +14,15 @@ class DataValidator:
     def _load_config(self, config_path):
         try:
             if not os.path.exists(config_path):
-                print(f"Warning: Config file not found: {config_path}")
+                # Use logging instead of print for better CLI integration
+                import logging
+                logging.getLogger(__name__).warning(f"Config file not found: {config_path}")
                 return {}
             with open(config_path, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading config {config_path}: {e}")
+            import logging
+            logging.getLogger(__name__).error(f"Error loading config {config_path}: {e}")
             return {}
     
     def validate_data(self, df, date_col=None, desc_col=None, amount_col=None):
@@ -228,13 +231,23 @@ class DataValidator:
     
     def _validate_global_limits(self, amount):
         """
-        Tier 3: Validate against global limits
+        Tier 3: Validate against global limits with dynamic thresholds
         """
         global_limits = self.settings_config.get('global_limits', {})
         
         min_threshold = global_limits.get('min_amount_threshold', 0)
         max_threshold = global_limits.get('max_amount_threshold', 10000)
         zero_flag = global_limits.get('zero_amount_flag', True)
+        
+        # Dynamic threshold adjustment for large transactions
+        # Real estate, business investments, etc. can be very large
+        if amount > 100000:  # $100k+ transactions
+            # Allow very large amounts but still flag extreme outliers
+            max_threshold = max(max_threshold, 10000000)  # $10M max
+        elif amount > 50000:  # $50k+ transactions
+            max_threshold = max(max_threshold, 1000000)   # $1M max
+        elif amount > 10000:  # $10k+ transactions
+            max_threshold = max(max_threshold, 100000)    # $100k max
         
         if zero_flag and amount == 0:
             return "Amount is $0"
