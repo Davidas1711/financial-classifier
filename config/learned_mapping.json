@@ -13,5 +13,175 @@
     "category": "Entertainment",
     "learned_date": "2026-02-13T17:01:08.008061",
     "method": "ai_classification"
+  },
+  "- A": {
+    "category": "Transportation",
+    "learned_date": "2026-02-13T18:28:29.726581",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "vistajet - a": {
+    "category": "Transportation",
+    "learned_date": "2026-02-13T18:28:29.727583",
+    "method": "ai_classification"
+  },
+  "House - B8": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.728898",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "caviar house - b8": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.728898",
+    "method": "ai_classification"
+  },
+  "Aman - B": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.729901",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "aman resorts - b": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.730901",
+    "method": "ai_classification"
+  },
+  "Herm\u00e8s -": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T18:28:29.731948",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "herm\u00e8s -": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T18:28:29.731948",
+    "method": "ai_classification"
+  },
+  "Elite - B": {
+    "category": "Bills & Utilities",
+    "learned_date": "2026-02-13T18:28:29.732949",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "elite estate staffing - b": {
+    "category": "Bills & Utilities",
+    "learned_date": "2026-02-13T18:28:29.733958",
+    "method": "ai_classification"
+  },
+  "Four Paris -": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.733958",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "four seasons paris - c": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.733958",
+    "method": "ai_classification"
+  },
+  "Row - B2": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T18:28:29.735462",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "savile row bespoke - b2": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T18:28:29.736491",
+    "method": "ai_classification"
+  },
+  "Aman - C6": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.736491",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "aman resorts - c6": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.737557",
+    "method": "ai_classification"
+  },
+  "four seasons paris - 30ac58": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.738568",
+    "method": "ai_classification"
+  },
+  "Sachs Pwm -": {
+    "category": "Banking & Fees",
+    "learned_date": "2026-02-13T18:28:29.738568",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "goldman sachs pwm - b": {
+    "category": "Banking & Fees",
+    "learned_date": "2026-02-13T18:28:29.740072",
+    "method": "ai_classification"
+  },
+  "Wine -": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.741075",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "vintage wine merchants -": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.741616",
+    "method": "ai_classification"
+  },
+  "St. Regis -": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.742129",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "st. regis maldives - 4cacc2": {
+    "category": "Entertainment",
+    "learned_date": "2026-02-13T18:28:29.743135",
+    "method": "ai_classification"
+  },
+  "House - 6A": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.744138",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "caviar house - 6a": {
+    "category": "Food & Dining",
+    "learned_date": "2026-02-13T18:28:29.744138",
+    "method": "ai_classification"
+  },
+  "-": {
+    "category": "Transportation",
+    "learned_date": "2026-02-13T18:28:29.745142",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "netjets -": {
+    "category": "Transportation",
+    "learned_date": "2026-02-13T18:28:29.746147",
+    "method": "ai_classification"
+  },
+  "* Yzyho": {
+    "category": "Income",
+    "learned_date": "2026-02-13T19:27:31.229293",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "paypal *yzyholdings yzyho": {
+    "category": "Income",
+    "learned_date": "2026-02-13T19:27:31.230799",
+    "method": "ai_classification"
+  },
+  "Ona*": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T19:27:31.232867",
+    "method": "auto_ai_classification",
+    "confidence": 75
+  },
+  "ona*mulebuy com": {
+    "category": "Shopping",
+    "learned_date": "2026-02-13T19:27:31.233886",
+    "method": "ai_classification"
   }
 }
